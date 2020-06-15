@@ -11,8 +11,9 @@
 #include "colormaps.h"
 #include "stb_image_write.h"
 
-#define MAX_STEPS 1 << 11
-#define MIN_STEPS 1 << 7
+uint32_t max_steps = 1 << 11;
+uint32_t min_steps = 1 << 7;
+
 #define COUNT(a) (sizeof(a) / sizeof(0 [a]))
 
 #define LERP(a, b, u) ((a) * (1 - (u)) + (b) * (u))
@@ -34,7 +35,7 @@ static uint32_t mandelbrot(long double x, long double y) {
     long double i = y;
     long double mag_sq = r * r + i * i;
     uint32_t steps = 0;
-    while (steps < MAX_STEPS && mag_sq <= 4) {
+    while (steps < max_steps && mag_sq <= 4) {
         long double rr = r * r - i * i + x;
         i = 2 * r * i + y;
         r = rr;
@@ -50,7 +51,7 @@ static uint32_t choose_center(long double& x, long double& y) {
         x = rand_range(-1.5, 1);
         y = rand_range(0, 1);
         steps = mandelbrot(x, y);
-    } while (steps < MIN_STEPS || steps >= MAX_STEPS);
+    } while (steps < min_steps || steps >= max_steps);
     return steps;
 }
 
@@ -135,37 +136,215 @@ static void* gen_image(void* p) {
 }
 
 int main(int argc, char* argv[]) {
-    int np = get_nprocs();
-    const int num_threads = np > 2 ? np - 2 : 1;
+    const uint8_t* colormaps[] = {twilight_shifted, magma, bone, cmrmap};
+    const int size[] = {COUNT(twilight_shifted), COUNT(magma), COUNT(bone),
+                        COUNT(cmrmap)};
 
+    const char* filename = NULL;
+    int wid = 960;
+    int hei = 540;
+    bool center_set = false;
+    bool size_set = false;
+    long double x = 0;
+    long double y = 0;
+    long double dx = 0;
+    long double dy = 0;
+    int cmap_choice = -1;
+    unsigned int seed = time(NULL);
+    int num_threads = get_nprocs() - 1;
+    if (num_threads <= 0) num_threads = 1;
+
+    for (int i = 1; i < argc; i++) {
 #ifdef DEBUG
-    printf("Running with %d threads.\n", num_threads);
-    fflush(stdout);
+        printf("Parsing argument %s\n", argv[i]);
 #endif
+        if (argv[i][0] != '-') {
+            filename = argv[i];
+#ifdef DEBUG
+            printf("Output filename: %s\n", filename);
+#endif
+            continue;
+        }
+        switch (argv[i][1]) {
+            case 'h':
+                printf(
+                    "Usage: %s [OPTION]... FILENAME\n\n"
+                    "Options:\n"
+                    "  -h                    Show this help message and exit.\n"
+                    "  -g WIDTH HEIGHT       Image size (defaults 960 540).\n"
+                    "  -c X Y                View window center.\n"
+                    "  -s DX DY              View window size.\n"
+                    "  -m COLORMAP           Colormap: twilight_shifted, "
+                    "magma, bone, CMRmap.\n"
+                    "  -z MIN MAX            Minimal value to accept a random "
+                    "coordinate as image\n"
+                    "                        center and maximal value for the "
+                    "fractal calculation\n"
+                    "                        (defaults 128 2048).\n"
+                    "  -r RNG_SEED           Random number generator seed.\n"
+                    "  -p NUM                Number of threads to use.\n",
+                    argv[0]);
+                return 0;
+                break;
+            case 'g':
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 1]);
+                    return 1;
+                }
+                wid = atoi(argv[i]);
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 2]);
+                    return 1;
+                }
+                hei = atoi(argv[i]);
+                if (wid <= 0 || hei <= 0) {
+                    fprintf(
+                        stderr,
+                        "Width (%d) and height (%d) must be greater than 0.\n",
+                        wid, hei);
+                    return 1;
+                }
+                break;
+            case 'c':
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 1]);
+                    return 1;
+                }
+                x = strtold(argv[i], NULL);
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 2]);
+                    return 1;
+                }
+                y = strtold(argv[i], NULL);
+                center_set = true;
+                break;
+            case 's':
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 1]);
+                    return 1;
+                }
+                dx = strtold(argv[i], NULL) / 2;
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 2]);
+                    return 1;
+                }
+                dy = strtold(argv[i], NULL) / 2;
+                size_set = true;
+                break;
+            case 'm':
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 1]);
+                    return 1;
+                }
+                if (strcmp(argv[i], "twilight_shifted") == 0)
+                    cmap_choice = 0;
+                else if (strcmp(argv[i], "magma") == 0)
+                    cmap_choice = 1;
+                else if (strcmp(argv[i], "bone") == 0)
+                    cmap_choice = 2;
+                else if (strcmp(argv[i], "cmrmap") == 0)
+                    cmap_choice = 3;
+                else {
+                    fprintf(stderr,
+                            "Error: invalid colormap choice %s.  Try -h for "
+                            "help.\n",
+                            argv[i]);
+                    return 1;
+                }
+                break;
+            case 'z':
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 1]);
+                    return 1;
+                }
+                min_steps = strtoul(argv[i], NULL, 0);
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 2]);
+                    return 1;
+                }
+                max_steps = strtoul(argv[i], NULL, 0);
+                if (min_steps >= max_steps) {
+                    fprintf(stderr, "MIN (%u) must be greater than MAX (%u).\n",
+                            min_steps, max_steps);
+                    return 1;
+                }
+                break;
+            case 'r':
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 1]);
+                    return 1;
+                }
+                seed = strtoul(argv[i], NULL, 0);
+                break;
+            case 'p':
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 1]);
+                    return 1;
+                }
+                num_threads = atoi(argv[i]);
+                if (num_threads <= 0) {
+                    fprintf(stderr,
+                            "Error: invalid value for number of threads (%s == "
+                            "%d).\n",
+                            argv[i], num_threads);
+                    return 1;
+                }
+                break;
+            default:
+                fprintf(stderr, "Error: unexpected parameter %s.\n", argv[i]);
+                return 1;
+        }
+    }
 
-    if (argc < 4) {
-        fprintf(stderr, "Usage: %s WIDTH HEIGHT FILENAME\n", argv[0]);
+    if (filename == NULL) {
+        fprintf(stderr,
+                "Error: missing filename!\nUsage: %s [OPTIONS] FILENAME\n",
+                argv[0]);
         return 1;
     }
 
-    const int wid = atoi(argv[1]);
-    const int hei = atoi(argv[2]);
-    if (wid <= 0 || hei <= 0) {
-        fprintf(stderr, "Width (%d) and height (%d) must be greater than 0.",
-                wid, hei);
-        return 2;
+#ifdef DEBUG
+    printf("Seed: %u\nRunning with %d threads.\nImage size: %d x %d\n", seed,
+           num_threads, wid, hei);
+#endif
+
+    srand(seed);
+
+    uint32_t steps;
+    if (center_set)
+        steps = mandelbrot(x, y);
+    else
+        steps = choose_center(x, y);
+
+    if (!size_set) {
+        dx = powl(steps, rand_range(-2.5, -1));
+        dy = dx * hei / wid;
     }
 
-    srand(time(NULL));
+#ifdef DEBUG
+    printf("Image window: (%Lg, %Lg) x (%Lg, %Lg).\n", x - dx, y - dy, x + dx,
+           y + dy);
+#endif
 
-    long double x, y;
-    const uint32_t steps = choose_center(x, y);
-    const long double dx = powl(steps, rand_range(-2.5, -1));
-    const long double dy = dx * hei / wid;
+    if (cmap_choice < 0) cmap_choice = rand() % COUNT(colormaps);
 
 #ifdef DEBUG
-    printf("Image window: (%Lg, %Lg) x (%Lg, %Lg).\n", xmin, ymin, xmax, ymax);
+    printf("Using colormap %d.\n", cmap_choice);
 #endif
+
+    uint8_t* colormap = (uint8_t*)colormaps[cmap_choice];
+    const int max_index = size[cmap_choice] / 3 - 1;
 
     BufferData* buffer = (BufferData*)malloc(sizeof(BufferData) * wid * hei);
     const int lines_per_thread = hei / num_threads + 1;
@@ -180,7 +359,7 @@ int main(int argc, char* argv[]) {
                       (t == num_threads - 1) ? hei : (t + 1) * lines_per_thread,
                       wid,
                       hei,
-                      MAX_STEPS + 1,
+                      max_steps + 1,
                       0,
                       x - dx,
                       x + dx,
@@ -189,7 +368,7 @@ int main(int argc, char* argv[]) {
         pthread_create(thread + t, NULL, calc_buffer, (void*)(cb_data + t));
     }
 
-    uint32_t smin = MAX_STEPS + 1;
+    uint32_t smin = max_steps + 1;
     uint32_t smax = 0;
     for (int t = 0; t < num_threads; t++) {
         pthread_join(thread[t], NULL);
@@ -203,17 +382,6 @@ int main(int argc, char* argv[]) {
 
     const double log_min = log(smin);
     const double log_delta = log(smax) - log_min;
-
-    const uint8_t* colormaps[] = {twilight_shifted, magma, bone, cmrmap};
-    const int size[] = {COUNT(twilight_shifted), COUNT(magma), COUNT(bone),
-                        COUNT(cmrmap)};
-    int cmap_choice = rand() % COUNT(colormaps);
-    uint8_t* colormap = (uint8_t*)colormaps[cmap_choice];
-    int max_index = size[cmap_choice] / 3 - 1;
-
-#ifdef DEBUG
-    printf("Using colormap %d.\n", cmap_choice);
-#endif
 
     GenImageData gi_data[num_threads];
     for (int t = 0; t < num_threads; t++) {
@@ -244,7 +412,7 @@ int main(int argc, char* argv[]) {
 #endif
 
     stbi_write_png_compression_level = 10;
-    stbi_write_png(argv[3], wid, hei, 4, buffer, wid * 4);
+    stbi_write_png(filename, wid, hei, 4, buffer, wid * 4);
 
 #ifdef DEBUG
     printf("Done.\n");
