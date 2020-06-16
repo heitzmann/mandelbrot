@@ -174,13 +174,13 @@ int main(int argc, char* argv[]) {
                     "  -g WIDTH HEIGHT       Image size (defaults 960 540).\n"
                     "  -c X Y                View window center.\n"
                     "  -s DX DY              View window size.\n"
-                    "  -m COLORMAP           Colormap: twilight_shifted, "
-                    "magma, bone, CMRmap.\n"
                     "  -z MIN MAX            Minimal value to accept a random "
                     "coordinate as image\n"
                     "                        center and maximal value for the "
                     "fractal calculation\n"
                     "                        (defaults 128 2048).\n"
+                    "  -m COLORMAP           Colormap: twilight_shifted, "
+                    "magma, bone, CMRmap.\n"
                     "  -r RNG_SEED           Random number generator seed.\n"
                     "  -p NUM                Number of threads to use.\n",
                     argv[0]);
@@ -237,6 +237,25 @@ int main(int argc, char* argv[]) {
                 dy = strtold(argv[i], NULL) / 2;
                 size_set = true;
                 break;
+            case 'z':
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 1]);
+                    return 1;
+                }
+                min_steps = strtoul(argv[i], NULL, 0);
+                if (++i == argc) {
+                    fprintf(stderr, "Error: missing value after option %s.\n",
+                            argv[i - 2]);
+                    return 1;
+                }
+                max_steps = strtoul(argv[i], NULL, 0);
+                if (min_steps >= max_steps) {
+                    fprintf(stderr, "MIN (%u) must be greater than MAX (%u).\n",
+                            min_steps, max_steps);
+                    return 1;
+                }
+                break;
             case 'm':
                 if (++i == argc) {
                     fprintf(stderr, "Error: missing value after option %s.\n",
@@ -256,25 +275,6 @@ int main(int argc, char* argv[]) {
                             "Error: invalid colormap choice %s.  Try -h for "
                             "help.\n",
                             argv[i]);
-                    return 1;
-                }
-                break;
-            case 'z':
-                if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 1]);
-                    return 1;
-                }
-                min_steps = strtoul(argv[i], NULL, 0);
-                if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 2]);
-                    return 1;
-                }
-                max_steps = strtoul(argv[i], NULL, 0);
-                if (min_steps >= max_steps) {
-                    fprintf(stderr, "MIN (%u) must be greater than MAX (%u).\n",
-                            min_steps, max_steps);
                     return 1;
                 }
                 break;
