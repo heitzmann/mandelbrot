@@ -74,10 +74,10 @@ static void* calc_buffer(void* p) {
 #endif
     for (int j = data->start_line; j < data->last_line; j++) {
         const long double v = (long double)j / (data->height - 1.0);
-        const double y = LERP(data->ymin, data->ymax, v);
+        const long double y = LERP(data->ymin, data->ymax, v);
         for (int i = 0; i < data->width; i++, b++) {
             const long double u = (long double)i / (data->width - 1.0);
-            const double x = LERP(data->xmin, data->xmax, u);
+            const long double x = LERP(data->xmin, data->xmax, u);
             const uint32_t steps =
                 1 + mandelbrot(x, y);  // Add 1 due to log scaling
             b->value = steps;
@@ -100,7 +100,7 @@ struct GenImageData {
     BufferData* buffer;
     int start_line, last_line;
     int width, height;
-    double log_min, log_delta;
+    long double log_min, log_delta;
     uint8_t* colormap;
     int max_index;
 };
@@ -115,7 +115,7 @@ static void* gen_image(void* p) {
 #endif
     for (int j = data->start_line; j < data->last_line; j++) {
         for (int i = 0; i < data->width; i++, b++) {
-            double value = (log(b->value) - data->log_min) / data->log_delta;
+            long double value = (log(b->value) - data->log_min) / data->log_delta;
             if (value < 0)
                 value = 0;
             else if (value > 1)
@@ -380,8 +380,8 @@ int main(int argc, char* argv[]) {
         if (cb_data[t].smax > smax) smax = cb_data[t].smax;
     }
 
-    const double log_min = log(smin);
-    const double log_delta = log(smax) - log_min;
+    const long double log_min = log(smin);
+    const long double log_delta = log(smax) - log_min;
 
     GenImageData gi_data[num_threads];
     for (int t = 0; t < num_threads; t++) {
