@@ -1,12 +1,22 @@
+MAIN=mandelbrot
 SOURCES=$(wildcard *.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
-BINS=$(SOURCES:.cpp=)
 
-CXXFLAGS+=-lm -pthread -O3
+EXAMPLES=examples.png
+EXAMPLE_SRCS=$(shell bash -c 'seq -f "example-%g.thumb.png" -s " " 21')
+
+CXXFLAGS+=-lm -pthread -O2
 
 .PHONY: all clean
 
-all: $(BINS)
+all: $(MAIN)
 
 clean:
-	$(RM) $(OBJECTS) $(BINS)
+	$(RM) $(OBJECTS) $(MAIN)
+
+$(EXAMPLES): $(EXAMPLE_SRCS)
+	montage -geometry 480x270+4+4 -tile 3x7 $^ $@
+	rm $^
+
+%.thumb.png: $(MAIN)
+	./$(MAIN) -g 960 540 -r $(shell bash -c 'echo $$RANDOM') $@

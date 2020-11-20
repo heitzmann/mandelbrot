@@ -8,7 +8,8 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION 1
 
-#include "colormaps.h"
+// #include "matplotlib_colormaps.h"
+#include "scm_colormaps.h"
 #include "stb_image_write.h"
 
 uint32_t max_steps = 1 << 11;
@@ -115,7 +116,8 @@ static void* gen_image(void* p) {
 #endif
     for (int j = data->start_line; j < data->last_line; j++) {
         for (int i = 0; i < data->width; i++, b++) {
-            long double value = (log(b->value) - data->log_min) / data->log_delta;
+            long double value =
+                (log(b->value) - data->log_min) / data->log_delta;
             if (value < 0)
                 value = 0;
             else if (value > 1)
@@ -136,9 +138,24 @@ static void* gen_image(void* p) {
 }
 
 int main(int argc, char* argv[]) {
-    const uint8_t* colormaps[] = {twilight_shifted, magma, bone, cmrmap};
-    const int size[] = {COUNT(twilight_shifted), COUNT(magma), COUNT(bone),
-                        COUNT(cmrmap)};
+    const uint8_t* colormaps[] = {
+        acton, bamako,  batlow, berlin, bilbao, broc,   broco,
+        buda,  cork,    corko,  davos,  devon,  grayc,  hawaii,
+        imola, lajolla, lapaz,  lisbon, nuuk,   oleron, oslo,
+        roma,  romao,   tofino, tokyo,  turku,  vik,    viko};
+    const int colormap_sizes[] = {
+        COUNT(acton),  COUNT(bamako), COUNT(batlow), COUNT(berlin),
+        COUNT(bilbao), COUNT(broc),   COUNT(broco),  COUNT(buda),
+        COUNT(cork),   COUNT(corko),  COUNT(davos),  COUNT(devon),
+        COUNT(grayc),  COUNT(hawaii), COUNT(imola),  COUNT(lajolla),
+        COUNT(lapaz),  COUNT(lisbon), COUNT(nuuk),   COUNT(oleron),
+        COUNT(oslo),   COUNT(roma),   COUNT(romao),  COUNT(tofino),
+        COUNT(tokyo),  COUNT(turku),  COUNT(vik),    COUNT(viko)};
+    const char* colormap_names[] = {
+        "acton", "bamako",  "batlow", "berlin", "bilbao", "broc",   "broco",
+        "buda",  "cork",    "corko",  "davos",  "devon",  "grayc",  "hawaii",
+        "imola", "lajolla", "lapaz",  "lisbon", "nuuk",   "oleron", "oslo",
+        "roma",  "romao",   "tofino", "tokyo",  "turku",  "vik",    "viko"};
 
     const char* filename = NULL;
     int wid = 960;
@@ -179,11 +196,23 @@ int main(int argc, char* argv[]) {
                     "                        center and maximal value for the "
                     "fractal calculation\n"
                     "                        (defaults 128 2048).\n"
-                    "  -m COLORMAP           Colormap: twilight_shifted, "
-                    "magma, bone, CMRmap.\n"
-                    "  -r RNG_SEED           Random number generator seed.\n"
-                    "  -p NUM                Number of threads to use.\n",
+                    "  -m COLORMAP           Colormap name. Available "
+                    "options:\n",
                     argv[0]);
+                for (int i = 0; i < COUNT(colormap_names);) {
+                    int remaining = 54;
+                    printf("                       ");
+                    while (i < COUNT(colormaps) &&
+                           remaining >= 2 + strlen(colormap_names[i])) {
+                        remaining -= 2 + strlen(colormap_names[i]);
+                        printf(" %s", colormap_names[i++]);
+                        if (i < COUNT(colormaps)) putchar(',');
+                    }
+                    putchar('\n');
+                }
+                puts(
+                    "  -r RNG_SEED           Random number generator seed.\n"
+                    "  -p NUM                Number of threads to use.");
                 return 0;
                 break;
             case 'g':
@@ -262,15 +291,13 @@ int main(int argc, char* argv[]) {
                             argv[i - 1]);
                     return 1;
                 }
-                if (strcmp(argv[i], "twilight_shifted") == 0)
-                    cmap_choice = 0;
-                else if (strcmp(argv[i], "magma") == 0)
-                    cmap_choice = 1;
-                else if (strcmp(argv[i], "bone") == 0)
-                    cmap_choice = 2;
-                else if (strcmp(argv[i], "cmrmap") == 0)
-                    cmap_choice = 3;
-                else {
+                for (int j = 0; j < COUNT(colormaps); j++) {
+                    if (strcmp(argv[i], colormap_names[j]) == 0) {
+                        cmap_choice = j;
+                        break;
+                    }
+                }
+                if (cmap_choice < 0) {
                     fprintf(stderr,
                             "Error: invalid colormap choice %s.  Try -h for "
                             "help.\n",
@@ -344,7 +371,7 @@ int main(int argc, char* argv[]) {
 #endif
 
     uint8_t* colormap = (uint8_t*)colormaps[cmap_choice];
-    const int max_index = size[cmap_choice] / 3 - 1;
+    const int max_index = colormap_sizes[cmap_choice] / 3 - 1;
 
     BufferData* buffer = (BufferData*)malloc(sizeof(BufferData) * wid * hei);
     const int lines_per_thread = hei / num_threads + 1;
