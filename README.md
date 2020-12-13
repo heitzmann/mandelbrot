@@ -5,7 +5,7 @@ Usefull to create random wallpapers.
 
 ## Usage
 
-```sh
+```
 Usage: ./mandelbrot [OPTION]... FILENAME
 
 Options:
