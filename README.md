@@ -6,7 +6,7 @@ Usefull to create random wallpapers.
 ## Usage
 
 ```sh
-./mandelbrot WIDTH HEIGHT FILENAME
+./mandelbrot -g WIDTH HEIGHT FILENAME
 ```
 
 ## Examples
