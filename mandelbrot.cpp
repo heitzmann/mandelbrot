@@ -188,17 +188,17 @@ int main(int argc, char* argv[]) {
                     "Usage: %s [OPTION]... FILENAME\n\n"
                     "Options:\n"
                     "  -h                    Show this help message and exit.\n"
-                    "  -g WIDTH HEIGHT       Image size (defaults 960 540).\n"
+                    "  -g WIDTH HEIGHT       Image size (defaults %d %d).\n"
                     "  -c X Y                View window center.\n"
                     "  -s DX DY              View window size.\n"
                     "  -z MIN MAX            Minimal value to accept a random "
                     "coordinate as image\n"
                     "                        center and maximal value for the "
                     "fractal calculation\n"
-                    "                        (defaults 128 2048).\n"
+                    "                        (defaults %u %u).\n"
                     "  -m COLORMAP           Colormap name. Available "
                     "options:\n",
-                    argv[0]);
+                    argv[0], wid, hei, min_steps, max_steps);
                 for (int i = 0; i < COUNT(colormap_names);) {
                     int remaining = 54;
                     printf("                       ");
@@ -210,9 +210,10 @@ int main(int argc, char* argv[]) {
                     }
                     putchar('\n');
                 }
-                puts(
+                printf(
                     "  -r RNG_SEED           Random number generator seed.\n"
-                    "  -p NUM                Number of threads to use.");
+                    "  -p NUM                Number of threads to use (default %d).\n",
+                    num_threads);
                 return 0;
                 break;
             case 'g':

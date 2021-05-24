@@ -22,7 +22,7 @@ Options:
                         imola, lajolla, lapaz, lisbon, nuuk, oleron, oslo,
                         roma, romao, tofino, tokyo, turku, vik, viko
   -r RNG_SEED           Random number generator seed.
-  -p NUM                Number of threads to use.
+  -p NUM                Number of threads to use (default ?).
 ```
 
 ## Examples
