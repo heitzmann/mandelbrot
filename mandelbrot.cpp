@@ -69,8 +69,8 @@ static void* calc_buffer(void* p) {
     CalcBufferData* data = (CalcBufferData*)p;
     BufferData* b = data->buffer + data->start_line * data->width;
 #ifdef DEBUG
-    printf("Thread %d: filling from %d to %d.\n", data->thread_id,
-           data->start_line, data->last_line - 1);
+    printf("Thread %d: filling from %d to %d.\n", data->thread_id, data->start_line,
+           data->last_line - 1);
     fflush(stdout);
 #endif
     for (int j = data->start_line; j < data->last_line; j++) {
@@ -79,8 +79,7 @@ static void* calc_buffer(void* p) {
         for (int i = 0; i < data->width; i++, b++) {
             const long double u = (long double)i / (data->width - 1.0);
             const long double x = LERP(data->xmin, data->xmax, u);
-            const uint32_t steps =
-                1 + mandelbrot(x, y);  // Add 1 due to log scaling
+            const uint32_t steps = 1 + mandelbrot(x, y);  // Add 1 due to log scaling
             b->value = steps;
             if (steps < data->smin) {
                 data->smin = steps;
@@ -110,14 +109,13 @@ static void* gen_image(void* p) {
     GenImageData* data = (GenImageData*)p;
     BufferData* b = data->buffer + data->start_line * data->width;
 #ifdef DEBUG
-    printf("Thread %d: generating image from %d to %d.\n", data->thread_id,
-           data->start_line, data->last_line - 1);
+    printf("Thread %d: generating image from %d to %d.\n", data->thread_id, data->start_line,
+           data->last_line - 1);
     fflush(stdout);
 #endif
     for (int j = data->start_line; j < data->last_line; j++) {
         for (int i = 0; i < data->width; i++, b++) {
-            long double value =
-                (log(b->value) - data->log_min) / data->log_delta;
+            long double value = (log(b->value) - data->log_min) / data->log_delta;
             if (value < 0)
                 value = 0;
             else if (value > 1)
@@ -138,24 +136,21 @@ static void* gen_image(void* p) {
 }
 
 int main(int argc, char* argv[]) {
-    const uint8_t* colormaps[] = {
-        acton, bamako,  batlow, berlin, bilbao, broc,   broco,
-        buda,  cork,    corko,  davos,  devon,  grayc,  hawaii,
-        imola, lajolla, lapaz,  lisbon, nuuk,   oleron, oslo,
-        roma,  romao,   tofino, tokyo,  turku,  vik,    viko};
+    const uint8_t* colormaps[] = {acton, bamako,  batlow, berlin, bilbao, broc,   broco,
+                                  buda,  cork,    corko,  davos,  devon,  grayc,  hawaii,
+                                  imola, lajolla, lapaz,  lisbon, nuuk,   oleron, oslo,
+                                  roma,  romao,   tofino, tokyo,  turku,  vik,    viko};
     const int colormap_sizes[] = {
-        COUNT(acton),  COUNT(bamako), COUNT(batlow), COUNT(berlin),
-        COUNT(bilbao), COUNT(broc),   COUNT(broco),  COUNT(buda),
-        COUNT(cork),   COUNT(corko),  COUNT(davos),  COUNT(devon),
-        COUNT(grayc),  COUNT(hawaii), COUNT(imola),  COUNT(lajolla),
-        COUNT(lapaz),  COUNT(lisbon), COUNT(nuuk),   COUNT(oleron),
-        COUNT(oslo),   COUNT(roma),   COUNT(romao),  COUNT(tofino),
-        COUNT(tokyo),  COUNT(turku),  COUNT(vik),    COUNT(viko)};
-    const char* colormap_names[] = {
-        "acton", "bamako",  "batlow", "berlin", "bilbao", "broc",   "broco",
-        "buda",  "cork",    "corko",  "davos",  "devon",  "grayc",  "hawaii",
-        "imola", "lajolla", "lapaz",  "lisbon", "nuuk",   "oleron", "oslo",
-        "roma",  "romao",   "tofino", "tokyo",  "turku",  "vik",    "viko"};
+        COUNT(acton), COUNT(bamako), COUNT(batlow), COUNT(berlin),  COUNT(bilbao), COUNT(broc),
+        COUNT(broco), COUNT(buda),   COUNT(cork),   COUNT(corko),   COUNT(davos),  COUNT(devon),
+        COUNT(grayc), COUNT(hawaii), COUNT(imola),  COUNT(lajolla), COUNT(lapaz),  COUNT(lisbon),
+        COUNT(nuuk),  COUNT(oleron), COUNT(oslo),   COUNT(roma),    COUNT(romao),  COUNT(tofino),
+        COUNT(tokyo), COUNT(turku),  COUNT(vik),    COUNT(viko)};
+    const char* colormap_names[] = {"acton", "bamako", "batlow", "berlin",  "bilbao", "broc",
+                                    "broco", "buda",   "cork",   "corko",   "davos",  "devon",
+                                    "grayc", "hawaii", "imola",  "lajolla", "lapaz",  "lisbon",
+                                    "nuuk",  "oleron", "oslo",   "roma",    "romao",  "tofino",
+                                    "tokyo", "turku",  "vik",    "viko"};
 
     const char* filename = NULL;
     int wid = 960;
@@ -202,8 +197,7 @@ int main(int argc, char* argv[]) {
                 for (int i = 0; i < COUNT(colormap_names);) {
                     int remaining = 54;
                     printf("                       ");
-                    while (i < COUNT(colormaps) &&
-                           remaining >= 2 + strlen(colormap_names[i])) {
+                    while (i < COUNT(colormaps) && remaining >= 2 + strlen(colormap_names[i])) {
                         remaining -= 2 + strlen(colormap_names[i]);
                         printf(" %s", colormap_names[i++]);
                         if (i < COUNT(colormaps)) putchar(',');
@@ -218,35 +212,29 @@ int main(int argc, char* argv[]) {
                 break;
             case 'g':
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 1]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 1]);
                     return 1;
                 }
                 wid = atoi(argv[i]);
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 2]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 2]);
                     return 1;
                 }
                 hei = atoi(argv[i]);
                 if (wid <= 0 || hei <= 0) {
-                    fprintf(
-                        stderr,
-                        "Width (%d) and height (%d) must be greater than 0.\n",
-                        wid, hei);
+                    fprintf(stderr, "Width (%d) and height (%d) must be greater than 0.\n", wid,
+                            hei);
                     return 1;
                 }
                 break;
             case 'c':
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 1]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 1]);
                     return 1;
                 }
                 x = strtold(argv[i], NULL);
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 2]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 2]);
                     return 1;
                 }
                 y = strtold(argv[i], NULL);
@@ -254,14 +242,12 @@ int main(int argc, char* argv[]) {
                 break;
             case 's':
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 1]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 1]);
                     return 1;
                 }
                 dx = strtold(argv[i], NULL) / 2;
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 2]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 2]);
                     return 1;
                 }
                 dy = strtold(argv[i], NULL) / 2;
@@ -269,27 +255,24 @@ int main(int argc, char* argv[]) {
                 break;
             case 'z':
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 1]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 1]);
                     return 1;
                 }
                 min_steps = strtoul(argv[i], NULL, 0);
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 2]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 2]);
                     return 1;
                 }
                 max_steps = strtoul(argv[i], NULL, 0);
                 if (min_steps >= max_steps) {
-                    fprintf(stderr, "MIN (%u) must be greater than MAX (%u).\n",
-                            min_steps, max_steps);
+                    fprintf(stderr, "MIN (%u) must be greater than MAX (%u).\n", min_steps,
+                            max_steps);
                     return 1;
                 }
                 break;
             case 'm':
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 1]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 1]);
                     return 1;
                 }
                 for (int j = 0; j < COUNT(colormaps); j++) {
@@ -308,16 +291,14 @@ int main(int argc, char* argv[]) {
                 break;
             case 'r':
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 1]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 1]);
                     return 1;
                 }
                 seed = strtoul(argv[i], NULL, 0);
                 break;
             case 'p':
                 if (++i == argc) {
-                    fprintf(stderr, "Error: missing value after option %s.\n",
-                            argv[i - 1]);
+                    fprintf(stderr, "Error: missing value after option %s.\n", argv[i - 1]);
                     return 1;
                 }
                 num_threads = atoi(argv[i]);
@@ -336,15 +317,13 @@ int main(int argc, char* argv[]) {
     }
 
     if (filename == NULL) {
-        fprintf(stderr,
-                "Error: missing filename!\nUsage: %s [OPTIONS] FILENAME\n",
-                argv[0]);
+        fprintf(stderr, "Error: missing filename!\nUsage: %s [OPTIONS] FILENAME\n", argv[0]);
         return 1;
     }
 
 #ifdef DEBUG
-    printf("Seed: %u\nRunning with %d threads.\nImage size: %d x %d\n", seed,
-           num_threads, wid, hei);
+    printf("Seed: %u\nRunning with %d threads.\nImage size: %d x %d\n", seed, num_threads, wid,
+           hei);
 #endif
 
     srand(seed);
@@ -361,8 +340,7 @@ int main(int argc, char* argv[]) {
     }
 
 #ifdef DEBUG
-    printf("Image window: (%Lg, %Lg) x (%Lg, %Lg).\n", x - dx, y - dy, x + dx,
-           y + dy);
+    printf("Image window: (%Lg, %Lg) x (%Lg, %Lg).\n", x - dx, y - dy, x + dx, y + dy);
 #endif
 
     if (cmap_choice < 0) cmap_choice = rand() % COUNT(colormaps);
