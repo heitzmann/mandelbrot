@@ -387,7 +387,15 @@ int main(int argc, char* argv[]) {
     }
 
     const long double log_min = log(smin);
-    const long double log_delta = log(smax) - log_min;
+    const long double log_max = log(smax);
+    long double log_delta;
+    if (log_max > log_min) {
+        log_delta = log_max - log_min;
+    } else {
+        log_delta = 1.0;
+        printf("WARNING: Selected window contains no detectable variation.\n");
+        fflush(stdout);
+    }
 
     GenImageData gi_data[num_threads];
     for (int t = 0; t < num_threads; t++) {

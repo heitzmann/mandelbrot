@@ -5,7 +5,8 @@ OBJECTS=$(SOURCES:.cpp=.o)
 EXAMPLES=examples.png
 EXAMPLE_SRCS=$(shell bash -c 'seq -f "example-%g.thumb.png" -s " " 21')
 
-CXXFLAGS+=-lm -pthread -O2
+CXXFLAGS+=-O2 -lm -pthread
+# CXXFLAGS+=-g -O0 -DDEBUG -lm -pthread
 
 .PHONY: all clean
 
